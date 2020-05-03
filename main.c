@@ -22,6 +22,7 @@ int main(int argc, char const *argv[])
 	for (int n = 0; n < process_num; n++) {
 		scanf("%s%d%d", proc[n].name, &proc[n].ready_time, &proc[n].exec_time);
 		proc[n].pid = -1;
+		//proc[n].request_time = -1;
 	}
 
 	int policy;
@@ -38,7 +39,7 @@ int main(int argc, char const *argv[])
 		case 'P':
 			policy = PSJF;
 			break;
-	}
+	}	
 	scheduling(proc, process_num, policy);
 	exit(0);	
 }

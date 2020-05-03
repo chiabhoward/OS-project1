@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+	#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -17,7 +17,7 @@ int assign_cpu(int pid, int core)
 	cpu_set_t mask;
 	CPU_ZERO(&mask);
 	CPU_SET(core, &mask);
-		
+
 	if (sched_setaffinity(pid, sizeof(mask), &mask) < 0) {
 		perror("sched_setaffinity");
 		exit(1);
@@ -32,6 +32,7 @@ int proc_setscheduler(int pid, int SCHED_var)
 	param.sched_priority = 0;
 
 	if( sched_setscheduler(pid, SCHED_var, &param) < 0) {
+		// printf("%d!!!\n", pid);
 		perror("sched_setscheduler");
 		return -1;
 	}

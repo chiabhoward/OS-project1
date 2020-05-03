@@ -1,4 +1,4 @@
-#define _GnprocU_SOURCE
+#define _GNU_SOURCE
 #include "scheduler.h"
 #include <stdlib.h>
 #include <signal.h>
@@ -21,28 +21,31 @@ static int current;
 static int finish_cnt;
 
 int next_process( struct process *proc, int nproc, int policy) {
+	
 	if ( (policy == FIFO || policy == SJF) && current != -1)
 		return current;
 
 	else if( policy == FIFO ) {
 		for(int i = 0 ; i < nproc ; i++) 
-			if( proc[i].pid != -1 )
+			if(proc[i].pid != -1 && proc[i].exec_time > 0)
 				return i;
 
 		return -1; 
 	}
 
 	else if( policy == RR ) {
-		if( current == -1 ) {
+		if( (ntime - t_last) == 500 ) {
+			proc[current].request_time = ntime;
+			t_last = ntime;
+
+			int min_idx = -1;
 			for(int i = 0; i < nproc; i++)
-				if( proc[i].pid != -1 && proc[i].exec_time > 0) 
-					return i; 
-		}
-		else if ( (ntime - t_last) % 500 == 0 ) {
-			for(int i = current + 1 ; i < nproc+current ; i++) {
-				if( proc[(i%nproc)].pid != -1 )
-					return (i%nproc); 
-			}
+				if( proc[i].pid != -1 && proc[i].exec_time > 0 && (min_idx == -1 || proc[i].request_time < proc[min_idx].request_time) ) {
+					min_idx = i;
+
+				}
+
+			return min_idx; 
 		}
 		return current;
 	}
@@ -89,7 +92,7 @@ int scheduling(struct process *proc, int nproc, int policy)
 			current = -1;
 			finish_cnt++;
 
-			if( finish_cnt == nproc) break;
+			if(finish_cnt == nproc) break;
 		}
 		
 		for( int i = 0 ; i < nproc ; i++){
@@ -97,9 +100,21 @@ int scheduling(struct process *proc, int nproc, int policy)
 				continue;
 			
 			if( proc[i].ready_time == ntime ) {
+				proc[i].request_time = ntime;
 				proc[i].pid = proc_exec(proc[i]);
 				proc_setscheduler(proc[i].pid, SCHED_IDLE);
 			}
+		}
+
+		if (current == -1) {
+			int tmp = -1;
+			for (int i = 0; i < nproc; i++) {
+				if (proc[i].exec_time != 0 && proc[i].pid != -1 && (tmp == -1 || proc[i].request_time < proc[tmp].request_time) ) {
+					t_last = ntime;
+					tmp = i;
+				}
+			}
+			current = tmp;
 		}
 
 		int next = next_process(proc, nproc, policy);
@@ -107,6 +122,7 @@ int scheduling(struct process *proc, int nproc, int policy)
 			if (current != next) {
 				proc_setscheduler(proc[next].pid, SCHED_OTHER); 
 				proc_setscheduler(proc[current].pid, SCHED_IDLE);
+				//printf("%d->%d left\n", proc[current].pid, proc[current].exec_time);
 				current = next;
 				t_last = ntime;
 			}

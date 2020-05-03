@@ -18,6 +18,7 @@ struct process {
 	int ready_time;
 	int exec_time;
 	pid_t pid;
+	int request_time;
 };
 
 int assign_cpu(int pid, int core);
